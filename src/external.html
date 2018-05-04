@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>RLS: External page</title>
+  <script src="/websocket"></script>
+  <link rel="stylesheet" href="assets/hiq.css">
+  <style>
+    body {
+      margin: 1rem;
+    }
+
+    section {
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>RLS external</h1>
+  <script>
+    const ws = createWebsocket({ debug: true });
+    console.log('%cHello!', 'color:blue;font-weight:bold');
+
+    // Subscrive to all websocket events, from everyting
+    ws.subscribe(/.*/, function ({ topic, payload }) {
+      console.log('Received a WebSocket message', { topic, payload });
+    });
+
+    // Helper to send a WebSocket command to the internal page
+    // for this app
+    const sendCommand = (topic, payload = {}) => {
+      ws.publish({ topic: `radio/command/${topic}`, payload });
+    };
+
+  </script>
+</body>
+
+</html>

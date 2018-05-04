@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="/websocket" charset="utf-8"></script>
+  <link rel="stylesheet" href="assets/hiq.css">
+</head>
+
+<body>
+  <h1>RLS internal</h1>
+  <script>
+
+    console.log('%cHello!', 'color:blue;font-weight:bold', 'messages from the server');
+
+    // Creates a websocket connection to commuicate
+    // with the external page and other services
+    const ws = createWebsocket({ debug: true });
+
+    ws.subscribe(new RegExp('radio/command/.*'), ({ topic, payload }) => {
+      console.log(topic, payload);
+
+    });
+    
+  </script>
+</body>
+
+</html>
