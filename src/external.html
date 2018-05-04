@@ -19,20 +19,51 @@
 <body>
   <h1>RLS external</h1>
   <script>
-    const ws = createWebsocket({ debug: true });
-    console.log('%cHello!', 'color:blue;font-weight:bold');
+    const serialPath = '/dev/ttyUSB0';
 
-    // Subscrive to all websocket events, from everyting
-    ws.subscribe(/.*/, function ({ topic, payload }) {
-      console.log('Received a WebSocket message', { topic, payload });
-    });
-
-    // Helper to send a WebSocket command to the internal page
-    // for this app
-    const sendCommand = (topic, payload = {}) => {
-      ws.publish({ topic: `radio/command/${topic}`, payload });
+    const openSerial = (ws) => {
+      ws.publish({
+        topic: 'serial/command/open',
+        payload: { path: serialPath, baudRate: 115200 }
+      });
     };
 
+
+    const readSerial = async (data) => {
+      const regex = new RegExp('\{([0-9]{1,3}\, [0-9]{1,3}\, [0-9]{1,3}, [0-9]{1,3})\}');
+      const matches = regex.exec(data);
+
+      if (matches == null) {
+        return;
+      }
+
+      const values = matches[1].split(', ').map(Number);
+
+      await playTrack(values);
+    };
+
+    const playTrack = (values) => (
+      ws.publish({
+        topic: 'rls/command/play',
+        payload: values,
+      })
+    );
+
+    const ws = createWebsocket({ debug: true });
+
+    ws.subscribe(new RegExp('.*/error/.*'), ({ topic, payload }) => {
+      console.warn(topic, payload);
+    });
+
+    ws.subscribe(new RegExp('serial/event/receive'), ({ topic, payload }) => {
+      const { path, data } = payload;
+
+      if (path == serialPath) {
+        readSerial(data);
+      }
+    });
+
+    ws.ready.then(() => { openSerial(ws) });
   </script>
 </body>
 

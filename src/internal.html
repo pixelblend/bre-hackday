@@ -3,24 +3,99 @@
 
 <head>
   <script src="/websocket" charset="utf-8"></script>
-  <link rel="stylesheet" href="assets/hiq.css">
 </head>
 
 <body>
   <h1>RLS internal</h1>
+  <audio class="media" loop="true"></audio>
   <script>
+    let canChange = true;
 
-    console.log('%cHello!', 'color:blue;font-weight:bold', 'messages from the server');
+    const music = {
+      gentle: 'eno.webm',
+      mild: 'manuva.webm',
+      fast: 'rocky.webm',
+      intense: 'diesel.webm',
+    };
 
-    // Creates a websocket connection to commuicate
-    // with the external page and other services
+    const stop = () => {
+      const mediaEl = document.querySelector('.media');
+      mediaEl.pause();
+      mediaEl.currentTime = 0;
+    };
+
+    const findTrack = (score) => {
+      console.log('score', score);
+      switch(true) {
+        case (score < 25): {
+          return music.gentle;
+        }
+        case (score < 50): {
+          return music.mild;
+        }
+        case (score < 75): {
+          return music.fast;
+        }
+        default: {
+          return music.intense;
+        }
+      }
+    };
+
+    let currentTrack = '';
+
+    const play = ([ rawPulse, acc, rawLight, sound ]) => (
+      new Promise((resolve, reject) => {
+        const pulse = rawPulse > 90 ? 50 : rawPulse;
+        const light = rawLight; //rawLight / 2;
+        const score = (pulse + acc + light + sound) / 4;
+        console.log('scores', pulse, acc, light, sound)
+
+        // const track = findTrack(score);
+        const track = findTrack(acc);
+
+        const url = `/rls/assets/audio/${track}`;
+
+        const mediaEl = document.querySelector('.media');
+
+        if (url == currentTrack) {
+          console.log('Already playing', url);
+          resolve();
+          return;
+        }
+
+        mediaEl.pause();
+
+        const startTime = Math.floor(Math.random() * (20 - 0 + 1)) + 0;
+
+        console.log('starting from', startTime);
+
+        mediaEl.src = url;
+        mediaEl.currentTime = startTime;
+        mediaEl.play();
+
+        currentTrack = url;
+
+        console.log('playing', url);
+
+        // wait two seconds before resolving
+        setTimeout(resolve, 2000);
+      })
+    );
+
     const ws = createWebsocket({ debug: true });
 
-    ws.subscribe(new RegExp('radio/command/.*'), ({ topic, payload }) => {
-      console.log(topic, payload);
+    ws.subscribe('rls/command/play', ({ topic, payload }) => {
+      if(canChange) {
+        canChange = false;
 
+        play(payload).then(() => canChange = true);
+      }
     });
-    
+
+    ws.subscribe('rls/command/stop', ({ topic, payload }) => {
+      stop();
+    });
   </script>
 </body>
 
